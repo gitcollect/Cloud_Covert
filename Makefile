@@ -10,6 +10,8 @@ kernel:
 
 user:
 	$(CC) -o test test.c
+	$(CC) -o recev_sig recev_sig.c
+	$(CC) -o off_sig off_sig.c
 
 clean:
-	rm -rf *.o *.ko *.mod.* *.cmd .module* modules* Module* .*.cmd .tmp* test
+	rm -rf *.o *.ko *.mod.* *.cmd .module* modules* Module* .*.cmd .tmp* test recev_sig off_sig
