@@ -19,7 +19,7 @@
 
 #define INTERVAL 5
 #define FREQUENCY 3292604
-
+#define NUM_VM 2
 
 #define SEND_CPUID 1
 #define RECV_CPUID 0
@@ -47,7 +47,8 @@ __inline__ uint64_t rdtsc(void) {
 #endif
 
 atomic_t msg_index;
-atomic_t msg_status;  // 0: done; 1: transmitting; 2: waiting
+atomic_t msg_status;  // 0: done; 1: transmitting; 2: waiting; 3: preapring
+atomic_t msg_prepare;
 int message[10];
 
 
@@ -135,8 +136,17 @@ int loop(void *ptr) {
 			tsc = rdtsc() + INTERVAL * FREQUENCY * (message[atomic_read(&msg_index)]+1);
 			while (rdtsc() < tsc);
 			atomic_set(&msg_status, 2);
+			atomic_set(&msg_prepare, NUM_VM-1);
 			HYPERVISOR_sched_op(SCHEDOP_block, NULL);
 		}
+		if (atomic_read(&msg_status)==3) {
+			tsc = rdtsc() + INTERVAL * FREQUENCY / 2;
+			while (rdtsc() < tsc);
+			atomic_set(&msg_status, 2);
+			atomic_dec(&msg_prepare);
+			HYPERVISOR_sched_op(SCHEDOP_block, NULL);
+		}
+
 	}
 
 	preempt_enable();
@@ -157,6 +167,7 @@ asmlinkage void sys_CovertChannel(int t) {
 
 	atomic_set(&msg_status, 0);
 	atomic_set(&msg_index, 0);
+	atomic_set(&msg_prepare, NUM_VM-1);
 
 	kernel_thread(loop, NULL, 0);
 
@@ -165,13 +176,17 @@ asmlinkage void sys_CovertChannel(int t) {
 
 	while (time_before(jiffies, tsc1)) {
 		while (atomic_read(&msg_status)!=2);
-		if (atomic_read(&msg_index)==9)
-			atomic_set(&msg_index, 0);
-		else 
-			atomic_inc(&msg_index);
-		tsc2 = rdtsc() + INTERVAL * FREQUENCY;
+		tsc2 = rdtsc() + INTERVAL * FREQUENCY / 2;
 		while (rdtsc() < tsc2);
-		atomic_set(&msg_status, 1);
+		if (atomic_read(&msg_prepare)==0) {
+			if (atomic_read(&msg_index)==9)
+				atomic_set(&msg_index, 0);
+			else 
+				atomic_inc(&msg_index);
+			atomic_set(&msg_status, 1);
+		}
+		if (atomic_read(&msg_prepare)>0)
+			atomic_set(&msg_status, 3);
 		xen_send_IPI_one(RECV_CPUID, XEN_CALL_FUNCTION_VECTOR);
 	}
 	tsc2 = rdtsc() + 30 * FREQUENCY;
