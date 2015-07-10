@@ -85,7 +85,7 @@ void receiver() {
 	}
 
 
-	printf("Sending......\n");
+	printf("Receiving......\n");
 	uint64_t tsc, tsc1, access_nr;
 	for (j=0; j<BIT_NR; j++) {
 		tsc = rdtsc() + INTERVAL;
