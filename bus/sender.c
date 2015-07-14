@@ -28,7 +28,7 @@ __inline__ uint64_t rdtsc(void) {
 #endif
 
 #define LINE_SIZE 64
-#define INTERVAL 100000
+#define INTERVAL 1000000
 
 int message[10];
 char *buf;

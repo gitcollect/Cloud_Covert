@@ -32,13 +32,15 @@ void cache_flush(uint8_t *address) {
         return;
 }
 
-#define INTERVAL 100000
-#define ACCESS_TIME 10000
+#define INTERVAL 1000000
+#define ACCESS_TIME 100000
 #define BIT_NR 100
+
+#define CLOCK_NR BIT_NR*(INTERVAL/ACCESS_TIME)
 
 uint8_t *buf;
 uint8_t *head;
-uint64_t timing[BIT_NR];
+uint64_t timing[CLOCK_NR];
 
 void receiver() {
 	cpu_set_t set;
@@ -53,8 +55,7 @@ void receiver() {
 	uint64_t tsc, tsc1;
 	volatile uint8_t next;
 	uint64_t i, access_nr;
-	for (i=0; i<BIT_NR; i++) {
-		tsc = rdtsc() + INTERVAL;
+	for (i=0; i<CLOCK_NR; i++) {
 		access_nr = 0;
 		tsc1 = rdtsc() + ACCESS_TIME;
 		while (rdtsc() < tsc1) {
@@ -63,7 +64,6 @@ void receiver() {
 			access_nr ++;
 		}
 		timing[i] = ACCESS_TIME/access_nr;
-		while(rdtsc() < tsc);
 	}
 }
 
@@ -89,7 +89,7 @@ int main (int argc, char *argv[]) {
 
 	receiver();
 
-	for (i=0; i<BIT_NR; i++)
+	for (i=0; i<CLOCK_NR; i++)
 		printf("%lu ", timing[i]);
 
 	printf("\n");
