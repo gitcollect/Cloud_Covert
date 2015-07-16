@@ -71,7 +71,7 @@ void send() {
 		tsc = rdtsc() + INTERVAL;
 		index = (index+1)%10;
 		read_address = (int *)(head+LINE_SIZE-message[index]);
-		if (message[index == 1]) {
+		if (message[index] == 1) {
 			while(rdtsc() < tsc) {
 				__asm__(
        			              "lock; xaddl %%eax, %1\n\t"
