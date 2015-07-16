@@ -27,6 +27,11 @@ __inline__ uint64_t rdtsc(void) {
 }
 #endif
 
+void cache_flush(uint8_t *address) {
+        __asm__ volatile("clflush (%0)": :"r"(address) :"memory");
+        return;
+}
+
 #define LINE_SIZE 64
 #define INTERVAL 1000000
 
@@ -66,12 +71,20 @@ void send() {
 		tsc = rdtsc() + INTERVAL;
 		index = (index+1)%10;
 		read_address = (int *)(head+LINE_SIZE-message[index]);
-		while(rdtsc() < tsc) {
-			__asm__(
-       		              "lock; xaddl %%eax, %1\n\t"
-               		      :"=a"(value)
-	                      :"m"(*read_address), "a"(value)
-       		              :"memory");
+		if (message[index == 1]) {
+			while(rdtsc() < tsc) {
+				__asm__(
+       			              "lock; xaddl %%eax, %1\n\t"
+               			      :"=a"(value)
+	                	      :"m"(*read_address), "a"(value)
+	       		              :"memory");
+			}
+		}
+		else {
+			while(rdtsc() < tsc) {
+				value += head[0];
+				cache_flush(&head[0]);
+			}
 		}
 	}
 }

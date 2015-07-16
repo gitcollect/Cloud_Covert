@@ -23,12 +23,13 @@
 #define INTERVAL 1000000
 #define ACCESS_TIME 100000
 #define BIT_NR 100
+#define CLOCK_NR BIT_NR*(INTERVAL/ACCESS_TIME)
 
 char *buf;
 char **head;
 
 int conflict_sets[SLICES][ASSOC];  // Records the conflicted set indexes.
-uint64_t timing[BIT_NR];
+uint64_t timing[CLOCK_NR];
 
 #ifdef __i386
 __inline__ uint64_t rdtsc(void) {
@@ -94,8 +95,7 @@ void receiver() {
 	uint64_t tsc, tsc1;
 	printf("Receiving...\n");
 
-	for (j=0; j<BIT_NR; j++){
-		tsc = rdtsc() + INTERVAL;
+	for (j=0; j<CLOCK_NR; j++){
 		access_nr = 0;
 		tsc1 = rdtsc() + ACCESS_TIME;
 		while (rdtsc() < tsc1) {
@@ -114,7 +114,6 @@ void receiver() {
 			}
 		}
 		timing[j] = ACCESS_TIME/access_nr;
-		while(rdtsc() < tsc);
 	}
 }
 
@@ -157,7 +156,7 @@ int main (int argc, char *argv[]) {
 
 	receiver();
 	
-	for (i=0; i<BIT_NR; i++)
+	for (i=0; i<CLOCK_NR; i++)
 		printf("%lu ", timing[i]);
 	
 	printf("\n");

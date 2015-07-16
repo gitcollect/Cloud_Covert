@@ -27,11 +27,7 @@ __inline__ uint64_t rdtsc(void) {
 }
 #endif
 
-void cache_flush(uint8_t *address) {
-        __asm__ volatile("clflush (%0)": :"r"(address) :"memory");
-        return;
-}
-
+#define LINE_SIZE 64
 #define INTERVAL 1000000
 #define ACCESS_TIME 100000
 #define BIT_NR 100
@@ -52,15 +48,21 @@ void receiver() {
 	}
 	printf("Begin Receiving......\n");
 
-	uint64_t tsc, tsc1;
-	volatile uint8_t next;
+	uint64_t tsc;
 	uint64_t i, access_nr;
+
+	int *read_address;
+	read_address = (int *)(head+LINE_SIZE-1);
+        int value = 0x0;
 	for (i=0; i<CLOCK_NR; i++) {
 		access_nr = 0;
-		tsc1 = rdtsc() + ACCESS_TIME;
-		while (rdtsc() < tsc1) {
-			next += head[0];
-			cache_flush(&head[0]);
+		tsc = rdtsc() + ACCESS_TIME;
+		while (rdtsc() < tsc) {
+			 __asm__(
+                              "lock; xaddl %%eax, %1\n\t"
+                              :"=a"(value)
+                              :"m"(*read_address), "a"(value)
+                              :"memory");
 			access_nr ++;
 		}
 		timing[i] = ACCESS_TIME/access_nr;
