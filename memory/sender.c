@@ -19,7 +19,7 @@
 #define SIZE 1024
 #define LINE_SIZE 64
 
-#define INTERVAL 1000000
+#define INTERVAL 1500000
 
 uint8_t *mem_chunk;
 uint64_t mem_size; 
@@ -55,13 +55,6 @@ uint64_t rdtsc(void) {
 
 void send() {
 	volatile uint8_t next = 0;;
-        cpu_set_t set;
-        CPU_ZERO(&set);
-        CPU_SET(0, &set);
-        if (sched_setaffinity(syscall(SYS_gettid), sizeof(cpu_set_t), &set)) {
-                fprintf(stderr, "Error set affinity\n")  ;
-                return;
-        }
 
 	int i, j;
 

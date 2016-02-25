@@ -33,7 +33,7 @@ void cache_flush(uint8_t *address) {
 }
 
 #define LINE_SIZE 64
-#define INTERVAL 1000000
+#define INTERVAL 1500000
 
 int message[10];
 char *buf;

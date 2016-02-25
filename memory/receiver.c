@@ -19,9 +19,10 @@
 #define SIZE 256
 #define LINE_SIZE 64
 
-#define INTERVAL 1000000
+#define INTERVAL 1500000
 #define ACCESS_TIME 100000
 #define BIT_NR 100
+#define CLOCK_NR BIT_NR*(INTERVAL/ACCESS_TIME)
 
 uint8_t *mem_chunk;
 uint64_t mem_size; 
@@ -29,7 +30,7 @@ uint64_t mem_size;
 int bank_index[6];
 int *index_array;
 
-uint64_t timing[BIT_NR];
+uint64_t timing[CLOCK_NR];
 
 void cache_flush(uint8_t *address) {
         __asm__ volatile("clflush (%0)": :"r"(address) :"memory");
@@ -87,8 +88,7 @@ void receiver() {
 
 	printf("Receiving......\n");
 	uint64_t tsc, tsc1, access_nr;
-	for (j=0; j<BIT_NR; j++) {
-		tsc = rdtsc() + INTERVAL;
+	for (j=0; j<CLOCK_NR; j++) {
 		access_nr = 0;
 		tsc1 = rdtsc() + ACCESS_TIME;
 		while (rdtsc() < tsc1) {
@@ -99,14 +99,13 @@ void receiver() {
 			}
 		}
 		timing[j] = ACCESS_TIME/access_nr;
-		while (rdtsc() < tsc);
 	}
 	return;
 }
 
 int main(int argc, char* argv[]) {
 	mem_size = 1024*1024*1024;
-	int fd = open("/mnt/hugepages/nebula4", O_CREAT|O_RDWR, 0755);
+	int fd = open("/mnt/hugepages/nebula2", O_CREAT|O_RDWR, 0755);
 	
 	if (fd < 0) {
 		printf("file open error!\n");
@@ -116,7 +115,7 @@ int main(int argc, char* argv[]) {
 	mem_chunk = mmap(0, mem_size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 	if (mem_chunk == MAP_FAILED) {
 		printf("map error!\n");
-		unlink("/mnt/hugepages/nebula4");
+		unlink("/mnt/hugepages/nebula2");
 		return 0;
 	}
 
@@ -126,8 +125,8 @@ int main(int argc, char* argv[]) {
 
 	receiver();
 
-	for (i=0; i<BIT_NR; i++)
-		printf("%lu ", timing[i]);
+	for (i=0; i<CLOCK_NR; i++)
+		printf("%lu\n", timing[i]);
 	printf("\n");
 
 	munmap(mem_chunk, mem_size);

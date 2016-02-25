@@ -20,7 +20,7 @@
 #define LINE_SIZE 64
 #define SET_NUM (WAY_SIZE/LINE_SIZE)
 
-#define INTERVAL 1000000
+#define INTERVAL 1500000
 
 #ifdef __i386
 __inline__ uint64_t rdtsc(void) {
